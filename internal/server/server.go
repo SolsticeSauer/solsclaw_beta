@@ -34,6 +34,10 @@ type Options struct {
 	UI fs.FS
 	// InstallerVersion is stamped into openclaw.json.
 	InstallerVersion string
+	// ShutdownRequested receives a single value when the UI's Quit button
+	// is clicked (POST /api/shutdown). main listens on it and runs the
+	// same graceful-close path as a SIGINT.
+	ShutdownRequested chan<- struct{}
 }
 
 // Start binds a localhost listener, mounts the SPA + API routes behind a
@@ -47,7 +51,10 @@ func Start(opts Options) (*Started, error) {
 	port := listener.Addr().(*net.TCPAddr).Port
 
 	mux := http.NewServeMux()
-	registerRoutes(mux, Deps{InstallerVersion: opts.InstallerVersion})
+	registerRoutes(mux, Deps{
+		InstallerVersion:  opts.InstallerVersion,
+		ShutdownRequested: opts.ShutdownRequested,
+	})
 
 	uiHandler := newUIHandler(opts.UI)
 	mux.Handle("/", uiHandler)

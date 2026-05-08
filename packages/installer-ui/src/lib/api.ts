@@ -53,6 +53,11 @@ export const Api = {
       method: 'POST',
       body: JSON.stringify({ provider, apiKey }),
     }),
+  // Asks the installer process to terminate. The server flushes a 200
+  // response before signalling main, so the UI can render its goodbye
+  // message before the page goes dead.
+  shutdown: () =>
+    api<{ ok: boolean; message: string }>('/api/shutdown', { method: 'POST' }),
 };
 
 export interface PipelineEvent {

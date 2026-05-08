@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer"
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer/steps"
@@ -14,7 +15,8 @@ import (
 )
 
 type Deps struct {
-	InstallerVersion string
+	InstallerVersion  string
+	ShutdownRequested chan<- struct{}
 }
 
 func registerRoutes(mux *http.ServeMux, d Deps) {
@@ -22,6 +24,34 @@ func registerRoutes(mux *http.ServeMux, d Deps) {
 	mux.HandleFunc("/api/providers", handleProviders)
 	mux.HandleFunc("/api/providers/test-key", handleTestKey)
 	mux.HandleFunc("/api/install", handleInstall(d))
+	mux.HandleFunc("/api/shutdown", handleShutdown(d))
+}
+
+// handleShutdown lets the UI request a graceful exit. We acknowledge
+// immediately so the Quit button can render a "goodbye" message before the
+// process disappears, then signal main via the shared channel after a short
+// flush delay. The channel is buffered (size 1) and closed exactly once;
+// repeated clicks are no-ops.
+func handleShutdown(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", http.MethodPost)
+			writeJSONError(w, http.StatusMethodNotAllowed, "POST only")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "message": "shutting down"})
+		if d.ShutdownRequested == nil {
+			return
+		}
+		go func() {
+			time.Sleep(250 * time.Millisecond)
+			select {
+			case d.ShutdownRequested <- struct{}{}:
+			default:
+				// Already requested — do nothing.
+			}
+		}()
+	}
 }
 
 type stateResponse struct {
