@@ -1,7 +1,11 @@
 // Package installer holds the domain types: provider catalogue, wizard
-// submission shape, and the openclaw.json config we render. Validation is
-// done with hand-written checks rather than a third-party schema library to
-// keep the dependency surface tiny.
+// submission shape, and the openclaw.json config we render.
+//
+// The openclaw.json schema we target here is the one validated by
+// `openclaw doctor`: top-level `models`, `agents`, `gateway`, etc. We
+// deliberately render a minimal slice — the user's chosen provider, the
+// default model, and (optionally) the OpenAI-compatible gateway endpoint —
+// and let OpenClaw apply its own defaults for everything else.
 package installer
 
 import (
@@ -83,51 +87,61 @@ func (w *WizardSubmission) Validate() error {
 	return nil
 }
 
-// OpenAIGatewayConfig models the gateway.openaiCompat block in openclaw.json.
-type OpenAIGatewayConfig struct {
-	Enabled  bool   `json:"enabled"`
-	Port     int    `json:"port"`
-	TokenRef string `json:"tokenRef,omitempty"`
-}
+// -- openclaw.json schema --
+//
+// Only the keys we actually populate are typed. We use omitempty + pointers
+// so optional sub-blocks vanish from the output entirely instead of leaving
+// behind a noisy `"foo": null` that could trip OpenClaw's strict validator.
 
-type TailscaleConfig struct {
-	Enabled   bool   `json:"enabled"`
-	Hostname  string `json:"hostname,omitempty"`
-	Ephemeral bool   `json:"ephemeral"`
-}
-
-type GatewayConfig struct {
-	OpenAICompat *OpenAIGatewayConfig `json:"openaiCompat,omitempty"`
-	Tailscale    *TailscaleConfig     `json:"tailscale,omitempty"`
+type ModelEntry struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ProviderConfig struct {
-	Type      string `json:"type"`
-	BaseURL   string `json:"baseUrl,omitempty"`
-	APIKeyRef string `json:"apiKeyRef"`
+	// BaseURL is required by OpenClaw's validator for every provider —
+	// native ones included.
+	BaseURL string `json:"baseUrl"`
+	// APIKey is intentionally inline today — OpenClaw's secret-reference
+	// syntax is documented separately and we'd rather ship a working
+	// installer than a broken one with the right pointer story.
+	APIKey string       `json:"apiKey,omitempty"`
+	Models []ModelEntry `json:"models"`
 }
 
-type AgentConfig struct {
-	Model     string `json:"model"`
-	Workspace string `json:"workspace,omitempty"`
+type ModelsBlock struct {
+	Providers map[string]ProviderConfig `json:"providers,omitempty"`
 }
 
-type TelemetryConfig struct {
+type AgentDefaults struct {
+	Model string `json:"model"`
+}
+
+type AgentsBlock struct {
+	Defaults *AgentDefaults `json:"defaults,omitempty"`
+}
+
+type ChatCompletionsEndpoint struct {
 	Enabled bool `json:"enabled"`
 }
 
-type InstallerStamp struct {
-	Version     string       `json:"version"`
-	InstalledAt string       `json:"installedAt"`
-	Addons      *SolanaStack `json:"addons,omitempty"`
+type HTTPEndpoints struct {
+	ChatCompletions *ChatCompletionsEndpoint `json:"chatCompletions,omitempty"`
 }
 
-// OpenclawConfig is the full ~/.openclaw/openclaw.json document.
+type HTTPGateway struct {
+	Endpoints *HTTPEndpoints `json:"endpoints,omitempty"`
+}
+
+type GatewayBlock struct {
+	HTTP *HTTPGateway `json:"http,omitempty"`
+}
+
+// OpenclawConfig is the slice of openclaw.json we own. Many other top-level
+// keys exist (mcp, skills, plugins, browser, ui, hooks, ...) but we don't
+// touch them; OpenClaw fills in its defaults.
 type OpenclawConfig struct {
-	Schema    string                    `json:"$schema,omitempty"`
-	Agent     AgentConfig               `json:"agent"`
-	Providers map[string]ProviderConfig `json:"providers"`
-	Gateway   *GatewayConfig            `json:"gateway,omitempty"`
-	Telemetry *TelemetryConfig          `json:"telemetry,omitempty"`
-	Installer *InstallerStamp           `json:"installer,omitempty"`
+	Models  *ModelsBlock  `json:"models,omitempty"`
+	Agents  *AgentsBlock  `json:"agents,omitempty"`
+	Gateway *GatewayBlock `json:"gateway,omitempty"`
 }

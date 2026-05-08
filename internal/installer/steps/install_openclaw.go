@@ -24,10 +24,10 @@ func (s InstallOpenclaw) Run(ctx context.Context, sc installer.StepContext) erro
 func pickPackageManager() (string, []string) {
 	switch {
 	case commandExists("pnpm"):
-		return "pnpm", []string{"add", "-g", "@openclaw/cli@latest"}
+		return "pnpm", []string{"add", "-g", "openclaw@latest"}
 	case commandExists("bun"):
-		return "bun", []string{"add", "-g", "@openclaw/cli@latest"}
+		return "bun", []string{"add", "-g", "openclaw@latest"}
 	default:
-		return "npm", []string{"install", "-g", "@openclaw/cli@latest"}
+		return "npm", []string{"install", "-g", "openclaw@latest"}
 	}
 }

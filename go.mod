@@ -2,7 +2,10 @@ module github.com/SolsticeSauer/solsclaw_beta
 
 go 1.26.3
 
-require github.com/99designs/keyring v1.2.2
+require (
+	github.com/99designs/keyring v1.2.2
+	github.com/ulikunitz/xz v0.5.15
+)
 
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect

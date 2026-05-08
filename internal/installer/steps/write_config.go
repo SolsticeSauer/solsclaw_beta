@@ -3,7 +3,7 @@ package steps
 import (
 	"context"
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer"
 )
@@ -20,41 +20,35 @@ func (s WriteConfig) Run(_ context.Context, sc installer.StepContext) error {
 		return fmt.Errorf("unknown provider %q", sc.Submission.Provider)
 	}
 
-	apiKeyRef := "none"
-	if !sc.Submission.Provider.IsLocal() {
-		apiKeyRef = fmt.Sprintf("keychain:solsclaw-installer/provider:%s", sc.Submission.Provider)
-	}
+	// agents.defaults.model uses "<provider>/<model-id>" syntax. The provider
+	// block's models array uses bare model IDs.
+	bareModel := strings.TrimPrefix(sc.Submission.Model, string(sc.Submission.Provider)+"/")
 
 	cfg := &installer.OpenclawConfig{
-		Schema: "https://docs.openclaw.ai/schema/openclaw.json",
-		Agent: installer.AgentConfig{
-			Model:     sc.Submission.Model,
-			Workspace: sc.Submission.Workspace,
-		},
-		Providers: map[string]installer.ProviderConfig{
-			string(sc.Submission.Provider): {
-				Type:      provider.Type,
-				BaseURL:   provider.BaseURL,
-				APIKeyRef: apiKeyRef,
+		Models: &installer.ModelsBlock{
+			Providers: map[string]installer.ProviderConfig{
+				string(sc.Submission.Provider): {
+					APIKey:  sc.Submission.APIKey,
+					BaseURL: provider.BaseURL,
+					Models: []installer.ModelEntry{{
+					ID:   bareModel,
+					Name: bareModel,
+				}},
+				},
 			},
 		},
-		Gateway: &installer.GatewayConfig{
-			OpenAICompat: &installer.OpenAIGatewayConfig{
-				Enabled: sc.Submission.OptionalFeatures.OpenAIGateway,
-				Port:    18789,
-			},
-		},
-		Telemetry: &installer.TelemetryConfig{Enabled: sc.Submission.Telemetry},
-		Installer: &installer.InstallerStamp{
-			Version:     sc.InstallerVersion,
-			InstalledAt: time.Now().UTC().Format(time.RFC3339),
-			Addons:      &sc.Submission.OptionalFeatures.Solana,
+		Agents: &installer.AgentsBlock{
+			Defaults: &installer.AgentDefaults{Model: sc.Submission.Model},
 		},
 	}
-	if sc.Submission.OptionalFeatures.Tailscale.Enabled {
-		cfg.Gateway.Tailscale = &installer.TailscaleConfig{
-			Enabled:  true,
-			Hostname: sc.Submission.OptionalFeatures.Tailscale.Hostname,
+
+	if sc.Submission.OptionalFeatures.OpenAIGateway {
+		cfg.Gateway = &installer.GatewayBlock{
+			HTTP: &installer.HTTPGateway{
+				Endpoints: &installer.HTTPEndpoints{
+					ChatCompletions: &installer.ChatCompletionsEndpoint{Enabled: true},
+				},
+			},
 		}
 	}
 
