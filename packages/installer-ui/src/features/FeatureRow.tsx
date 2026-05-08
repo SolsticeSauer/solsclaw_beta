@@ -18,29 +18,16 @@ export default function FeatureRow({ feature, data, setData, state }: Props): JS
   const warning = feature.warn?.(data, state) ?? null;
 
   return (
-    <div
-      style={{
-        marginTop: 14,
-        padding: '12px 14px',
-        borderLeft: `3px solid ${enabled ? 'var(--accent)' : 'var(--border)'}`,
-        background: enabled ? 'rgba(249, 115, 22, 0.04)' : 'transparent',
-        borderRadius: 4,
-      }}
-    >
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', margin: 0 }}>
+    <div className={`feature-row ${enabled ? 'on' : ''}`}>
+      <label>
         <input
           type="checkbox"
           checked={enabled}
           onChange={(e) => setData((d) => feature.toggle(d, e.target.checked))}
-          style={{ width: 'auto', margin: '4px 0 0 0' }}
         />
-        <span style={{ display: 'block' }}>
-          <strong style={{ color: 'var(--fg)' }}>{feature.label}</strong>
-          <span
-            style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}
-          >
-            {feature.description}
-          </span>
+        <span>
+          <span className="feature-title">{feature.label}</span>
+          <span className="feature-desc">{feature.description}</span>
         </span>
       </label>
 
@@ -48,16 +35,8 @@ export default function FeatureRow({ feature, data, setData, state }: Props): JS
         <feature.Detail data={data} setData={setData} state={state} />
       )}
 
-      {validation && (
-        <p style={{ marginTop: 8, marginBottom: 0, color: 'var(--err)', fontSize: 12 }}>
-          ⨯ {validation}
-        </p>
-      )}
-      {!validation && warning && (
-        <p style={{ marginTop: 8, marginBottom: 0, color: 'var(--warn)', fontSize: 12 }}>
-          ⚠ {warning}
-        </p>
-      )}
+      {validation && <div className="feature-error">⨯ {validation}</div>}
+      {!validation && warning && <div className="feature-warn">⚠ {warning}</div>}
     </div>
   );
 }

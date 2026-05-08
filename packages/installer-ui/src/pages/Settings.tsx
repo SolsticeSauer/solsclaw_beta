@@ -42,14 +42,9 @@ export default function Settings({ initial, state, onBack }: Props): JSX.Element
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
+      <div className="tabs">
         {onBack && (
-          <button
-            className="secondary"
-            onClick={onBack}
-            style={{ borderRadius: 6 }}
-            title="Back to home"
-          >
+          <button className="ghost" onClick={onBack} title="Back to home">
             ← Home
           </button>
         )}
@@ -57,8 +52,7 @@ export default function Settings({ initial, state, onBack }: Props): JSX.Element
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={tab === t ? '' : 'secondary'}
-            style={{ borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent', borderRadius: 0 }}
+            className={`tab ${tab === t ? 'active' : ''}`}
           >
             {t === 'config' ? 'Configuration' : t === 'addons' ? 'Add-ons' : 'Danger zone'}
           </button>

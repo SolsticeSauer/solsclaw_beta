@@ -36,24 +36,31 @@ export default function Home({ state, data, onConfigure, onReinstall }: Props): 
 
   return (
     <>
-      <div className="card" style={{ borderColor: 'var(--ok)' }}>
-        <h2 style={{ color: 'var(--ok)' }}>OpenClaw is ready</h2>
-        <p>
-          {isDocker
-            ? 'Container is running with state mounted on the host. The daemon restarts automatically across reboots.'
-            : 'Daemon is registered with your init system and will come back up on reboot.'}
-        </p>
-        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: '12px 0 0' }}>
-          <li>
+      <div className="status-banner">
+        <span className="status-dot" />
+        <div style={{ flex: 1 }}>
+          <h2>OpenClaw is ready</h2>
+          <p>
+            {isDocker
+              ? 'Container is running with state mounted on the host. The daemon restarts automatically across reboots.'
+              : 'Daemon is registered with your init system and will come back up on reboot.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Current configuration</h3>
+        <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
+          <li style={{ padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             Provider: <strong>{data.provider}</strong>
           </li>
-          <li>
+          <li style={{ padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             Default model: <strong>{data.model}</strong>
           </li>
-          <li>
+          <li style={{ padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
             Mode: <strong>{data.installMode}</strong>
           </li>
-          <li style={{ color: 'var(--muted)' }}>
+          <li style={{ padding: '6px 0', color: 'var(--fg-muted)' }}>
             Config: <code>{state.configPath}</code>
           </li>
         </ul>

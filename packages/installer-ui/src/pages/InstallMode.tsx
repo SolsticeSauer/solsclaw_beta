@@ -53,16 +53,9 @@ export default function InstallMode({ state, data, setData, onNext, onBack }: Pr
       </div>
 
       {isDocker && isMac && (
-        <div
-          className="card"
-          style={{
-            marginTop: 16,
-            border: '1px solid var(--warn)',
-            background: 'rgba(210, 153, 34, 0.06)',
-          }}
-        >
-          <h3 style={{ color: 'var(--warn)', marginTop: 0 }}>Heads-up for macOS users</h3>
-          <p style={{ color: 'var(--fg)' }}>
+        <div className="note warn">
+          <h3>Heads-up for macOS users</h3>
+          <p style={{ margin: 0 }}>
             Docker on macOS runs Linux containers in a VM, so macOS-host skills won't
             work from inside the container — anything that talks to AppleScript or system
             frameworks: <code>apple-notes</code>, <code>apple-reminders</code>,{' '}

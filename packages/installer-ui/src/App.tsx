@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Api, type InstallerState } from './lib/api';
 import { DEFAULT_WIZARD, STEPS, type StepId, type WizardData } from './lib/wizardState';
 import Welcome from './pages/Welcome';
@@ -65,16 +65,27 @@ export default function App(): JSX.Element {
     if (prev) setStep(prev.id);
   };
 
+  const platformLabel =
+    state.platform === 'darwin' ? 'macOS' : state.platform === 'linux' ? 'Linux' : 'Windows';
+
   return (
     <div className="app">
-      <h1>
-        OpenClaw Installer <span style={{ color: 'var(--muted)', fontSize: 14 }}>· {state.platform}</span>
-      </h1>
-      <p style={{ marginBottom: 20 }}>
-        {state.mode === 'install'
-          ? 'Set up OpenClaw on this machine.'
-          : 'Existing config detected — adjust settings or reinstall.'}
-      </p>
+      <header className="app-header">
+        <div className="app-mark" aria-hidden>
+          S
+        </div>
+        <div className="app-title">
+          <div className="name">
+            Solsclaw
+            <span className="platform">{platformLabel}</span>
+          </div>
+          <div className="subtitle">
+            {state.mode === 'install'
+              ? 'Set up OpenClaw on this machine.'
+              : 'Existing config detected — adjust settings or reinstall.'}
+          </div>
+        </div>
+      </header>
 
       {state.mode === 'settings' && settingsView === 'home' ? (
         <Home
@@ -91,14 +102,32 @@ export default function App(): JSX.Element {
       ) : (
         <>
           <div className="stepper">
-            {STEPS.map((s, idx) => (
-              <span
-                key={s.id}
-                className={`step ${idx === stepIndex ? 'active' : ''} ${idx < stepIndex ? 'done' : ''}`}
-              >
-                {idx + 1}. {s.label}
+            <div className="stepper-track">
+              {STEPS.map((s, idx) => {
+                const isActive = idx === stepIndex;
+                const isDone = idx < stepIndex;
+                return (
+                  <Fragment key={s.id}>
+                    <span
+                      className={`stepper-dot ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
+                      aria-current={isActive ? 'step' : undefined}
+                      title={s.label}
+                    />
+                    {idx < STEPS.length - 1 && (
+                      <span className={`stepper-line ${isDone ? 'done' : ''}`} />
+                    )}
+                  </Fragment>
+                );
+              })}
+            </div>
+            <div className="stepper-meta">
+              <span className="stepper-current">
+                {STEPS[stepIndex]?.label ?? ''}
               </span>
-            ))}
+              <span className="stepper-progress">
+                Step {Math.max(stepIndex + 1, 1)} of {STEPS.length}
+              </span>
+            </div>
           </div>
 
           {renderWizardStep()}
