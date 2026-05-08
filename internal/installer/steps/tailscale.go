@@ -14,6 +14,11 @@ func (Tailscale) ID() string    { return "tailscale" }
 func (Tailscale) Label() string { return "Install Tailscale + register node" }
 
 func (Tailscale) ShouldRun(sc installer.StepContext) bool {
+	// Docker mode handles Tailscale via a sidecar container; no host
+	// install needed.
+	if sc.Submission.InstallMode == installer.ModeDocker {
+		return false
+	}
 	return sc.Submission.OptionalFeatures.Tailscale.Enabled
 }
 

@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer"
+	"github.com/SolsticeSauer/solsclaw_beta/internal/platform"
 )
 
 type WriteConfig struct{}
 
 func (WriteConfig) ID() string                              { return "write-config" }
-func (WriteConfig) Label() string                           { return "Write ~/.openclaw/openclaw.json" }
+func (WriteConfig) Label() string                           { return "Write openclaw.json" }
 func (WriteConfig) ShouldRun(_ installer.StepContext) bool  { return true }
 
 func (s WriteConfig) Run(_ context.Context, sc installer.StepContext) error {
@@ -31,9 +32,9 @@ func (s WriteConfig) Run(_ context.Context, sc installer.StepContext) error {
 					APIKey:  sc.Submission.APIKey,
 					BaseURL: provider.BaseURL,
 					Models: []installer.ModelEntry{{
-					ID:   bareModel,
-					Name: bareModel,
-				}},
+						ID:   bareModel,
+						Name: bareModel,
+					}},
 				},
 			},
 		},
@@ -52,10 +53,19 @@ func (s WriteConfig) Run(_ context.Context, sc installer.StepContext) error {
 		}
 	}
 
-	target, err := installer.WriteConfig(cfg)
+	// In Docker mode the daemon doesn't read ~/.openclaw on the host;
+	// it reads /root/.openclaw inside the container, which is bind-mounted
+	// from ~/.solsclaw/docker/openclaw-data. The DockerWriteFiles step
+	// creates that directory; we just write the config into it.
+	target := platform.OpenclawConfigPath()
+	if sc.Submission.InstallMode == installer.ModeDocker {
+		target = platform.DockerOpenclawConfigPath()
+	}
+
+	written, err := installer.WriteConfigAt(cfg, target)
 	if err != nil {
 		return err
 	}
-	sc.Bus.Log(s.ID(), "info", "Wrote config to "+target)
+	sc.Bus.Log(s.ID(), "info", "Wrote config to "+written)
 	return nil
 }

@@ -36,3 +36,16 @@ func InstallerHome() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".solsclaw")
 }
+
+// DockerDir is ~/.solsclaw/docker — where the Dockerfile, compose.yml, .env
+// and the per-container OpenClaw state directory live for the Docker install
+// path.
+func DockerDir() string {
+	return filepath.Join(InstallerHome(), "docker")
+}
+
+// DockerOpenclawConfigPath returns the path to openclaw.json inside the
+// host-side mount that backs the container's /root/.openclaw volume.
+func DockerOpenclawConfigPath() string {
+	return filepath.Join(DockerDir(), "openclaw-data", "openclaw.json")
+}

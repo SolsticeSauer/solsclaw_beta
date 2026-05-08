@@ -11,7 +11,11 @@ type Verify struct{}
 
 func (Verify) ID() string                              { return "verify" }
 func (Verify) Label() string                           { return "Run `openclaw doctor`" }
-func (Verify) ShouldRun(_ installer.StepContext) bool  { return true }
+func (Verify) ShouldRun(sc installer.StepContext) bool {
+	// Docker pipeline has its own DockerVerify step that runs `openclaw
+	// doctor` inside the container.
+	return sc.Submission.InstallMode != installer.ModeDocker
+}
 
 func (s Verify) Run(ctx context.Context, sc installer.StepContext) error {
 	cmd := exec.CommandContext(ctx, "openclaw", "doctor")

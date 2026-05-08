@@ -16,6 +16,13 @@ func (Solana) ID() string    { return "solana-cli" }
 func (Solana) Label() string { return "Install Solana CLI (Anza release channel)" }
 
 func (Solana) ShouldRun(sc installer.StepContext) bool {
+	// Solana CLI inside a transient container has no good "where does the
+	// keypair live" answer, so we leave it as a host-only step. Users on
+	// Docker who need Solana can either add it to the Dockerfile or run
+	// it on the host alongside.
+	if sc.Submission.InstallMode == installer.ModeDocker {
+		return false
+	}
 	return sc.Submission.OptionalFeatures.Solana.CLI
 }
 

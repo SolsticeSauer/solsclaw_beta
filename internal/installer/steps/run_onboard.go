@@ -10,7 +10,9 @@ type RunOnboard struct{}
 
 func (RunOnboard) ID() string                              { return "onboard-daemon" }
 func (RunOnboard) Label() string                           { return "Register OpenClaw daemon" }
-func (RunOnboard) ShouldRun(_ installer.StepContext) bool  { return true }
+func (RunOnboard) ShouldRun(sc installer.StepContext) bool {
+	return sc.Submission.InstallMode != installer.ModeDocker
+}
 
 func (s RunOnboard) Run(ctx context.Context, sc installer.StepContext) error {
 	// --accept-risk is required alongside --non-interactive: OpenClaw won't

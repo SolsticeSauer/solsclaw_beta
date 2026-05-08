@@ -10,7 +10,9 @@ type InstallOpenclaw struct{}
 
 func (InstallOpenclaw) ID() string                              { return "install-openclaw" }
 func (InstallOpenclaw) Label() string                           { return "Install OpenClaw CLI globally" }
-func (InstallOpenclaw) ShouldRun(_ installer.StepContext) bool  { return true }
+func (InstallOpenclaw) ShouldRun(sc installer.StepContext) bool {
+	return sc.Submission.InstallMode != installer.ModeDocker
+}
 
 func (s InstallOpenclaw) Run(ctx context.Context, sc installer.StepContext) error {
 	pm, args := pickPackageManager()

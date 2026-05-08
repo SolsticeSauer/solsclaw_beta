@@ -1,4 +1,7 @@
+export type InstallMode = 'native' | 'docker';
+
 export interface WizardData {
+  installMode: InstallMode;
   provider: string;
   apiKey: string;
   model: string;
@@ -12,6 +15,7 @@ export interface WizardData {
 }
 
 export const DEFAULT_WIZARD: WizardData = {
+  installMode: 'native',
   provider: 'tensorix',
   apiKey: '',
   model: 'tensorix/glm-4.6',
@@ -26,6 +30,7 @@ export const DEFAULT_WIZARD: WizardData = {
 
 export const STEPS = [
   { id: 'welcome', label: 'Welcome' },
+  { id: 'install-mode', label: 'Install Mode' },
   { id: 'provider', label: 'LLM Provider' },
   { id: 'api-key', label: 'API Key' },
   { id: 'core', label: 'Core Settings' },

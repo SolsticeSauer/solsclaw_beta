@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Api, type InstallerState } from './lib/api';
 import { DEFAULT_WIZARD, STEPS, type StepId, type WizardData } from './lib/wizardState';
 import Welcome from './pages/Welcome';
+import InstallMode from './pages/InstallMode';
 import LlmProvider from './pages/LlmProvider';
 import ApiKey from './pages/ApiKey';
 import CoreParams from './pages/CoreParams';
@@ -97,6 +98,8 @@ export default function App(): JSX.Element {
     switch (step) {
       case 'welcome':
         return <Welcome state={state} onNext={goNext} />;
+      case 'install-mode':
+        return <InstallMode state={state} data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
       case 'provider':
         return <LlmProvider data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
       case 'api-key':

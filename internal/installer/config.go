@@ -13,7 +13,9 @@ import (
 )
 
 // ReadConfig returns the existing openclaw.json or (nil, nil) when no file
-// exists. Any other I/O or parse error propagates.
+// exists. Any other I/O or parse error propagates. The native install path
+// is the canonical location; for Docker installs the config lives inside
+// the bind-mounted volume and isn't read back through this function.
 func ReadConfig() (*OpenclawConfig, error) {
 	raw, err := os.ReadFile(platform.OpenclawConfigPath())
 	if err != nil {
@@ -33,12 +35,18 @@ func ReadConfig() (*OpenclawConfig, error) {
 // target, it is backed up to <path>.bak.<RFC3339-stamp> first so that no
 // successful previous setup is silently destroyed.
 func WriteConfig(cfg *OpenclawConfig) (string, error) {
-	home := platform.OpenclawHome()
-	if err := os.MkdirAll(home, 0o700); err != nil {
+	return WriteConfigAt(cfg, platform.OpenclawConfigPath())
+}
+
+// WriteConfigAt is the same as WriteConfig but lets the caller pin the
+// target path — used by the Docker pipeline to write into the host-side
+// mount under ~/.solsclaw/docker/openclaw-data.
+func WriteConfigAt(cfg *OpenclawConfig, target string) (string, error) {
+	dir := filepath.Dir(target)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}
 
-	target := platform.OpenclawConfigPath()
 	if _, err := os.Stat(target); err == nil {
 		stamp := time.Now().UTC().Format("20060102T150405Z")
 		backup := fmt.Sprintf("%s.bak.%s", target, stamp)
@@ -52,7 +60,7 @@ func WriteConfig(cfg *OpenclawConfig) (string, error) {
 		return "", err
 	}
 
-	tmp := filepath.Join(home, fmt.Sprintf(".openclaw.json.tmp-%d", os.Getpid()))
+	tmp := filepath.Join(dir, fmt.Sprintf(".openclaw.json.tmp-%d", os.Getpid()))
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return "", err
 	}

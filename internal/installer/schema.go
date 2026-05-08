@@ -64,8 +64,27 @@ type OptionalFeatures struct {
 	Solana        SolanaStack         `json:"solana"`
 }
 
+type InstallMode string
+
+const (
+	// ModeNative installs OpenClaw directly on the host: Node.js is
+	// downloaded under ~/.solsclaw, openclaw is npm-installed globally,
+	// and the daemon is registered with launchd / systemd / Windows.
+	ModeNative InstallMode = "native"
+	// ModeDocker writes a Dockerfile + docker-compose.yml under
+	// ~/.solsclaw/docker, builds the image locally, and runs OpenClaw
+	// in a container with state mounted as a volume. Optional Tailscale
+	// is added as a sidecar service per the upstream Tailscale docs.
+	ModeDocker InstallMode = "docker"
+)
+
+func (m InstallMode) Valid() bool {
+	return m == ModeNative || m == ModeDocker
+}
+
 // WizardSubmission is the shape sent by the UI on /api/install.
 type WizardSubmission struct {
+	InstallMode      InstallMode      `json:"installMode"`
 	Provider         ProviderID       `json:"provider"`
 	APIKey           string           `json:"apiKey"`
 	Model            string           `json:"model"`
@@ -75,6 +94,12 @@ type WizardSubmission struct {
 }
 
 func (w *WizardSubmission) Validate() error {
+	if w.InstallMode == "" {
+		w.InstallMode = ModeNative
+	}
+	if !w.InstallMode.Valid() {
+		return errors.New("installMode is invalid")
+	}
 	if !w.Provider.Valid() {
 		return errors.New("provider is invalid")
 	}
@@ -83,6 +108,11 @@ func (w *WizardSubmission) Validate() error {
 	}
 	if strings.TrimSpace(w.Workspace) == "" {
 		return errors.New("workspace is required")
+	}
+	if w.InstallMode == ModeDocker &&
+		w.OptionalFeatures.Tailscale.Enabled &&
+		strings.TrimSpace(w.OptionalFeatures.Tailscale.AuthKey) == "" {
+		return errors.New("tailscale.authKey is required when running in Docker mode")
 	}
 	return nil
 }

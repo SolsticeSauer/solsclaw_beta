@@ -12,6 +12,11 @@ func (X402USX) ID() string    { return "x402-usx-skills" }
 func (X402USX) Label() string { return "Register x402 + USX skills with OpenClaw" }
 
 func (X402USX) ShouldRun(sc installer.StepContext) bool {
+	if sc.Submission.InstallMode == installer.ModeDocker {
+		// Could be `docker compose exec openclaw openclaw tools install …`
+		// — left as future work alongside Solana CLI in containers.
+		return false
+	}
 	return sc.Submission.OptionalFeatures.Solana.X402Skill || sc.Submission.OptionalFeatures.Solana.USXSkill
 }
 

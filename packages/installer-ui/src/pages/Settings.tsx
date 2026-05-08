@@ -213,6 +213,7 @@ export function configToWizard(cfg: unknown, fallback: WizardData = DEFAULT_WIZA
   };
   const provider = Object.keys(c.providers ?? {})[0] ?? fallback.provider;
   return {
+    installMode: fallback.installMode,
     provider,
     apiKey: '',
     model: c.agent?.model ?? fallback.model,

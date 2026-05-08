@@ -16,6 +16,12 @@ func (OpenAIGateway) ID() string    { return "openai-gateway" }
 func (OpenAIGateway) Label() string { return "Enable OpenClaw OpenAI-compatible gateway" }
 
 func (OpenAIGateway) ShouldRun(sc installer.StepContext) bool {
+	// In Docker mode the gateway endpoint is enabled purely via the
+	// openclaw.json we render into the volume; there's no separate daemon
+	// toggle to flip from the host.
+	if sc.Submission.InstallMode == installer.ModeDocker {
+		return false
+	}
 	return sc.Submission.OptionalFeatures.OpenAIGateway
 }
 

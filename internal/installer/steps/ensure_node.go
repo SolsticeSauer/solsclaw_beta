@@ -39,7 +39,9 @@ type EnsureNode struct{}
 func (EnsureNode) ID() string    { return "ensure-node" }
 func (EnsureNode) Label() string { return "Ensure Node.js is available" }
 
-func (EnsureNode) ShouldRun(_ installer.StepContext) bool { return true }
+func (EnsureNode) ShouldRun(sc installer.StepContext) bool {
+	return sc.Submission.InstallMode != installer.ModeDocker
+}
 
 func (s EnsureNode) Run(ctx context.Context, sc installer.StepContext) error {
 	if commandExists("npm") || commandExists("pnpm") || commandExists("bun") {
