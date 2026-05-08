@@ -18,7 +18,8 @@ func Default() []installer.Step {
 		OpenAIGateway{},
 		Tailscale{},
 		Solana{},
-		X402USX{},
+		X402Skill{},
+		USXSkill{},
 		Verify{},
 		// Docker path. We render files first so a Docker-daemon outage at
 		// install time still leaves a working tree the user can `docker

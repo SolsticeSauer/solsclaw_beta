@@ -22,7 +22,7 @@ func (OpenAIGateway) ShouldRun(sc installer.StepContext) bool {
 	if sc.Submission.InstallMode == installer.ModeDocker {
 		return false
 	}
-	return sc.Submission.OptionalFeatures.OpenAIGateway
+	return sc.Submission.OptionalFeatures.OpenAIGateway.Enabled
 }
 
 func (s OpenAIGateway) Run(ctx context.Context, sc installer.StepContext) error {

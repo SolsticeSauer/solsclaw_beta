@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react';
-import { streamInstall, type PipelineEvent } from '../lib/api';
+import { streamInstall, type InstallerState, type PipelineEvent } from '../lib/api';
 import { DEFAULT_WIZARD, type WizardData } from '../lib/wizardState';
+import { CATEGORIES, CATEGORY_ORDER, FEATURES } from '../features';
+import type { FeatureCategory, FeatureModule } from '../features';
+import FeatureRow from '../features/FeatureRow';
 
 interface Props {
   initial: WizardData;
+  state: InstallerState;
   onBack?: () => void;
 }
 
 type Tab = 'config' | 'addons' | 'danger';
 
-export default function Settings({ initial, onBack }: Props): JSX.Element {
+export default function Settings({ initial, state, onBack }: Props): JSX.Element {
   const [tab, setTab] = useState<Tab>('config');
   const [data, setData] = useState<WizardData>(initial);
   const [busy, setBusy] = useState(false);
@@ -62,7 +66,7 @@ export default function Settings({ initial, onBack }: Props): JSX.Element {
       </div>
 
       {tab === 'config' && <ConfigTab data={data} setData={setData} />}
-      {tab === 'addons' && <AddonsTab data={data} setData={setData} />}
+      {tab === 'addons' && <AddonsTab data={data} setData={setData} state={state} />}
       {tab === 'danger' && <DangerTab />}
 
       {tab !== 'danger' && (
@@ -139,61 +143,35 @@ function ConfigTab({
 function AddonsTab({
   data,
   setData,
+  state,
 }: {
   data: WizardData;
   setData: (updater: (d: WizardData) => WizardData) => void;
+  state: InstallerState;
 }): JSX.Element {
-  const opt = data.optionalFeatures;
-  const setOpt = (patch: Partial<WizardData['optionalFeatures']>): void =>
-    setData((d) => ({ ...d, optionalFeatures: { ...d.optionalFeatures, ...patch } }));
+  // Settings → Add-ons reuses the same FEATURES registry as the wizard, so
+  // the two surfaces never drift. Adding a feature appears in both places
+  // automatically.
+  const grouped: Record<string, FeatureModule[]> = {};
+  for (const feature of FEATURES) {
+    (grouped[feature.category] ??= []).push(feature);
+  }
 
   return (
     <div>
-      <label>
-        <input
-          type="checkbox"
-          checked={opt.openaiGateway}
-          onChange={(e) => setOpt({ openaiGateway: e.target.checked })}
-          style={{ width: 'auto', marginRight: 8 }}
-        />
-        OpenAI-compatible gateway endpoint
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={opt.tailscale.enabled}
-          onChange={(e) => setOpt({ tailscale: { ...opt.tailscale, enabled: e.target.checked } })}
-          style={{ width: 'auto', marginRight: 8 }}
-        />
-        Tailscale remote access
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={opt.solana.cli}
-          onChange={(e) => setOpt({ solana: { ...opt.solana, cli: e.target.checked } })}
-          style={{ width: 'auto', marginRight: 8 }}
-        />
-        Solana CLI
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={opt.solana.x402Skill}
-          onChange={(e) => setOpt({ solana: { ...opt.solana, x402Skill: e.target.checked } })}
-          style={{ width: 'auto', marginRight: 8 }}
-        />
-        x402 skill
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={opt.solana.usxSkill}
-          onChange={(e) => setOpt({ solana: { ...opt.solana, usxSkill: e.target.checked } })}
-          style={{ width: 'auto', marginRight: 8 }}
-        />
-        USX stablecoin skill
-      </label>
+      {CATEGORY_ORDER.map((cat: FeatureCategory) => {
+        const features = grouped[cat];
+        if (!features?.length) return null;
+        const meta = CATEGORIES[cat];
+        return (
+          <section key={cat} style={{ marginTop: 16 }}>
+            <h3 style={{ margin: '0 0 4px' }}>{meta.label}</h3>
+            {features.map((f) => (
+              <FeatureRow key={f.id} feature={f} data={data} setData={setData} state={state} />
+            ))}
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -240,9 +218,11 @@ export function configToWizard(cfg: unknown, fallback: WizardData = DEFAULT_WIZA
     telemetry: false,
     availableModels: [],
     optionalFeatures: {
-      openaiGateway: c.gateway?.http?.endpoints?.chatCompletions?.enabled ?? false,
+      openaiGateway: { enabled: c.gateway?.http?.endpoints?.chatCompletions?.enabled ?? false },
       tailscale: { enabled: false },
-      solana: { cli: false, x402Skill: false, usxSkill: false },
+      solanaCli: { enabled: false },
+      x402Skill: { enabled: false },
+      usxSkill: { enabled: false },
     },
   };
 }

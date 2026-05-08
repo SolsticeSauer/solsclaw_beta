@@ -23,7 +23,7 @@ func (Solana) ShouldRun(sc installer.StepContext) bool {
 	if sc.Submission.InstallMode == installer.ModeDocker {
 		return false
 	}
-	return sc.Submission.OptionalFeatures.Solana.CLI
+	return sc.Submission.OptionalFeatures.SolanaCLI.Enabled
 }
 
 func (s Solana) Run(ctx context.Context, sc installer.StepContext) error {

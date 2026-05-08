@@ -87,7 +87,7 @@ export default function App(): JSX.Element {
           }}
         />
       ) : state.mode === 'settings' && settingsView === 'settings' ? (
-        <Settings initial={data} onBack={() => setSettingsView('home')} />
+        <Settings initial={data} state={state} onBack={() => setSettingsView('home')} />
       ) : (
         <>
           <div className="stepper">
@@ -121,7 +121,15 @@ export default function App(): JSX.Element {
       case 'core':
         return <CoreParams data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
       case 'optional':
-        return <OptionalFeatures data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
+        return (
+          <OptionalFeatures
+            state={state}
+            data={data}
+            setData={setData}
+            onNext={goNext}
+            onBack={goPrev}
+          />
+        );
       case 'review':
         return <Review data={data} onNext={goNext} onBack={goPrev} />;
       case 'install':

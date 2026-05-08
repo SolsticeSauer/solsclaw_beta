@@ -46,22 +46,31 @@ func (p ProviderID) IsLocal() bool {
 	return p == ProviderOllama || p == ProviderLMStudio
 }
 
-type TailscaleSubmission struct {
+// FeatureToggle is the canonical "is this enabled?" payload every plain
+// feature submits. Features that need extra fields (Tailscale auth key,
+// future ones) define their own struct that embeds the same Enabled bool
+// at the same json key — the UI's feature registry treats them uniformly.
+type FeatureToggle struct {
+	Enabled bool `json:"enabled"`
+}
+
+type TailscaleFeature struct {
 	Enabled  bool   `json:"enabled"`
 	AuthKey  string `json:"authKey,omitempty"`
 	Hostname string `json:"hostname,omitempty"`
 }
 
-type SolanaStack struct {
-	CLI       bool `json:"cli"`
-	X402Skill bool `json:"x402Skill"`
-	USXSkill  bool `json:"usxSkill"`
-}
-
+// OptionalFeatures is intentionally a flat record: one named field per
+// feature so adding, renaming or removing a feature touches exactly one
+// schema field plus its step file. No nested grouping (the previous
+// solana.{cli,x402Skill,usxSkill} sub-struct conflated three independent
+// features and made the UI hard to extend).
 type OptionalFeatures struct {
-	OpenAIGateway bool                `json:"openaiGateway"`
-	Tailscale     TailscaleSubmission `json:"tailscale"`
-	Solana        SolanaStack         `json:"solana"`
+	OpenAIGateway FeatureToggle    `json:"openaiGateway"`
+	Tailscale     TailscaleFeature `json:"tailscale"`
+	SolanaCLI     FeatureToggle    `json:"solanaCli"`
+	X402Skill     FeatureToggle    `json:"x402Skill"`
+	USXSkill      FeatureToggle    `json:"usxSkill"`
 }
 
 type InstallMode string
@@ -109,8 +118,8 @@ func (w *WizardSubmission) Validate() error {
 	if strings.TrimSpace(w.Workspace) == "" {
 		return errors.New("workspace is required")
 	}
-	if w.InstallMode == ModeDocker &&
-		w.OptionalFeatures.Tailscale.Enabled &&
+	if w.OptionalFeatures.Tailscale.Enabled &&
+		w.InstallMode == ModeDocker &&
 		strings.TrimSpace(w.OptionalFeatures.Tailscale.AuthKey) == "" {
 		return errors.New("tailscale.authKey is required when running in Docker mode")
 	}

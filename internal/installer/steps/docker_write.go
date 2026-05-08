@@ -32,7 +32,7 @@ func (s DockerWriteFiles) Run(_ context.Context, sc installer.StepContext) error
 	plan, err := docker.Render(docker.Inputs{
 		Provider:             string(sc.Submission.Provider),
 		APIKey:               sc.Submission.APIKey,
-		OpenAIGatewayEnabled: sc.Submission.OptionalFeatures.OpenAIGateway,
+		OpenAIGatewayEnabled: sc.Submission.OptionalFeatures.OpenAIGateway.Enabled,
 		TailscaleEnabled:     sc.Submission.OptionalFeatures.Tailscale.Enabled,
 		TailscaleHostname:    fallbackHostname(sc.Submission.OptionalFeatures.Tailscale.Hostname),
 		TailscaleAuthKey:     sc.Submission.OptionalFeatures.Tailscale.AuthKey,

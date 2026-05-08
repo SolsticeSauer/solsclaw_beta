@@ -11,10 +11,17 @@ export interface WizardData {
   // /v1/models. Bare IDs (no provider prefix). Empty array means we don't
   // know the list and the UI falls back to free-text entry.
   availableModels: string[];
+  // One named slot per optional feature. Each slot at minimum has
+  // { enabled: boolean }; features that need extra inputs (Tailscale auth
+  // key) extend the shape. Adding a new feature: add a slot here and a
+  // module under src/features/ — nothing else in the wizard pages
+  // needs to know.
   optionalFeatures: {
-    openaiGateway: boolean;
+    openaiGateway: { enabled: boolean };
     tailscale: { enabled: boolean; authKey?: string; hostname?: string };
-    solana: { cli: boolean; x402Skill: boolean; usxSkill: boolean };
+    solanaCli: { enabled: boolean };
+    x402Skill: { enabled: boolean };
+    usxSkill: { enabled: boolean };
   };
 }
 
@@ -27,9 +34,11 @@ export const DEFAULT_WIZARD: WizardData = {
   telemetry: false,
   availableModels: [],
   optionalFeatures: {
-    openaiGateway: false,
+    openaiGateway: { enabled: false },
     tailscale: { enabled: false },
-    solana: { cli: false, x402Skill: false, usxSkill: false },
+    solanaCli: { enabled: false },
+    x402Skill: { enabled: false },
+    usxSkill: { enabled: false },
   },
 };
 

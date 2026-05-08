@@ -43,7 +43,7 @@ func (s WriteConfig) Run(_ context.Context, sc installer.StepContext) error {
 		},
 	}
 
-	if sc.Submission.OptionalFeatures.OpenAIGateway {
+	if sc.Submission.OptionalFeatures.OpenAIGateway.Enabled {
 		cfg.Gateway = &installer.GatewayBlock{
 			HTTP: &installer.HTTPGateway{
 				Endpoints: &installer.HTTPEndpoints{
