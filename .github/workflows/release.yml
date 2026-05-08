@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+          - os: macos-latest
+            platform: darwin-arm64
+          - os: macos-13
+            platform: darwin-x64
+          - os: windows-latest
+            platform: win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Stage release tarball
+        shell: bash
+        run: |
+          STAGE=dist/stage
+          mkdir -p "$STAGE"
+          # Build artifacts (compiled JS + UI assets + package.json so node can resolve deps).
+          cp -R packages/installer-server/dist/. "$STAGE/"
+          cp -R packages/installer-server/public "$STAGE/public"
+          cp packages/installer-server/package.json "$STAGE/package.json"
+          # Vendor production deps so the runtime tree is self-contained.
+          (cd "$STAGE" && npm install --omit=dev --no-audit --no-fund)
+          # Tar contents (no wrapping directory) so the bootstrap script's
+          # extraction yields $INSTALL_HOME/bin/installer.js as expected.
+          tar -czf "installer-${{ matrix.platform }}.tar.gz" -C "$STAGE" .
+          shasum -a 256 "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.platform }}
+          path: |
+            installer-${{ matrix.platform }}.tar.gz
+            installer-${{ matrix.platform }}.sha256
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true

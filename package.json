@@ -1,0 +1,20 @@
+{
+  "name": "openclaw-installer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Universal installer with WebUI for OpenClaw, defaulting to tensorix.ai",
+  "packageManager": "pnpm@11.0.8",
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3"
+  }
+}
