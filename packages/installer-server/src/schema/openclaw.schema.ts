@@ -68,7 +68,9 @@ export type OpenclawConfig = z.infer<typeof OpenclawConfigSchema>;
 
 export const WizardSubmissionSchema = z.object({
   provider: ProviderIdSchema,
-  apiKey: z.string().min(1),
+  // Empty string allowed: in settings-mode "keep existing key" is signaled
+  // by sending an empty value. Local providers also legitimately send empty.
+  apiKey: z.string(),
   model: z.string().min(1),
   workspace: z.string().min(1),
   telemetry: z.boolean().default(false),

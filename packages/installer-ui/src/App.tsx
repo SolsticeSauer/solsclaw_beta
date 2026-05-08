@@ -9,6 +9,7 @@ import OptionalFeatures from './pages/OptionalFeatures';
 import Review from './pages/Review';
 import InstallProgress from './pages/InstallProgress';
 import Done from './pages/Done';
+import Settings, { configToWizard } from './pages/Settings';
 
 export default function App(): JSX.Element {
   const [state, setState] = useState<InstallerState | null>(null);
@@ -20,7 +21,11 @@ export default function App(): JSX.Element {
     Api.state()
       .then((s) => {
         setState(s);
-        setData((d) => ({ ...d, workspace: defaultWorkspace(s.platform) }));
+        if (s.mode === 'settings' && s.existingConfig) {
+          setData(configToWizard(s.existingConfig, { ...DEFAULT_WIZARD, workspace: defaultWorkspace(s.platform) }));
+        } else {
+          setData((d) => ({ ...d, workspace: defaultWorkspace(s.platform) }));
+        }
       })
       .catch((err: Error) => setError(err.message));
   }, []);
@@ -66,29 +71,50 @@ export default function App(): JSX.Element {
           : 'Existing config detected — adjust settings or reinstall.'}
       </p>
 
-      <div className="stepper">
-        {STEPS.map((s, idx) => (
-          <span
-            key={s.id}
-            className={`step ${idx === stepIndex ? 'active' : ''} ${idx < stepIndex ? 'done' : ''}`}
-          >
-            {idx + 1}. {s.label}
-          </span>
-        ))}
-      </div>
+      {state.mode === 'settings' ? (
+        <Settings initial={data} />
+      ) : (
+        <>
+          <div className="stepper">
+            {STEPS.map((s, idx) => (
+              <span
+                key={s.id}
+                className={`step ${idx === stepIndex ? 'active' : ''} ${idx < stepIndex ? 'done' : ''}`}
+              >
+                {idx + 1}. {s.label}
+              </span>
+            ))}
+          </div>
 
-      {step === 'welcome' && <Welcome state={state} onNext={goNext} />}
-      {step === 'provider' && <LlmProvider data={data} setData={setData} onNext={goNext} onBack={goPrev} />}
-      {step === 'api-key' && <ApiKey data={data} setData={setData} onNext={goNext} onBack={goPrev} />}
-      {step === 'core' && <CoreParams data={data} setData={setData} onNext={goNext} onBack={goPrev} />}
-      {step === 'optional' && (
-        <OptionalFeatures data={data} setData={setData} onNext={goNext} onBack={goPrev} />
+          {renderWizardStep()}
+        </>
       )}
-      {step === 'review' && <Review data={data} onNext={goNext} onBack={goPrev} />}
-      {step === 'install' && <InstallProgress data={data} onDone={() => setStep('done')} />}
-      {step === 'done' && <Done data={data} state={state} />}
     </div>
   );
+
+  function renderWizardStep(): JSX.Element | null {
+    if (!state) return null;
+    switch (step) {
+      case 'welcome':
+        return <Welcome state={state} onNext={goNext} />;
+      case 'provider':
+        return <LlmProvider data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
+      case 'api-key':
+        return <ApiKey data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
+      case 'core':
+        return <CoreParams data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
+      case 'optional':
+        return <OptionalFeatures data={data} setData={setData} onNext={goNext} onBack={goPrev} />;
+      case 'review':
+        return <Review data={data} onNext={goNext} onBack={goPrev} />;
+      case 'install':
+        return <InstallProgress data={data} onDone={() => setStep('done')} />;
+      case 'done':
+        return <Done data={data} state={state} />;
+      default:
+        return null;
+    }
+  }
 }
 
 function defaultWorkspace(platform: string): string {
