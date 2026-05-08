@@ -7,6 +7,10 @@ export interface WizardData {
   model: string;
   workspace: string;
   telemetry: boolean;
+  // Populated by the API-key test step when the provider exposes
+  // /v1/models. Bare IDs (no provider prefix). Empty array means we don't
+  // know the list and the UI falls back to free-text entry.
+  availableModels: string[];
   optionalFeatures: {
     openaiGateway: boolean;
     tailscale: { enabled: boolean; authKey?: string; hostname?: string };
@@ -21,6 +25,7 @@ export const DEFAULT_WIZARD: WizardData = {
   model: 'tensorix/glm-4.6',
   workspace: '',
   telemetry: false,
+  availableModels: [],
   optionalFeatures: {
     openaiGateway: false,
     tailscale: { enabled: false },

@@ -238,6 +238,7 @@ export function configToWizard(cfg: unknown, fallback: WizardData = DEFAULT_WIZA
     model: c.agents?.defaults?.model ?? fallback.model,
     workspace: c.agents?.defaults?.workspace ?? fallback.workspace,
     telemetry: false,
+    availableModels: [],
     optionalFeatures: {
       openaiGateway: c.gateway?.http?.endpoints?.chatCompletions?.enabled ?? false,
       tailscale: { enabled: false },

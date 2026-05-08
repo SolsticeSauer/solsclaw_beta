@@ -28,7 +28,9 @@ export default function LlmProvider({ data, setData, onNext, onBack }: Props): J
   visible.sort((a, b) => Number(b.isDefault ?? false) - Number(a.isDefault ?? false));
 
   const select = (p: ProviderInfo): void => {
-    setData((d) => ({ ...d, provider: p.id, model: p.defaultModel }));
+    // Clear any models we previously fetched for the old provider — they
+    // won't apply here, and a stale list would mislead CoreParams.
+    setData((d) => ({ ...d, provider: p.id, model: p.defaultModel, availableModels: [] }));
   };
 
   return (

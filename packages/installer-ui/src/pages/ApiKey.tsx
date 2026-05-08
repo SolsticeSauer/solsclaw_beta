@@ -23,17 +23,36 @@ export default function ApiKey({ data, setData, onNext, onBack }: Props): JSX.El
     try {
       const res = await Api.testKey(data.provider, data.apiKey);
       if (res.verified) {
+        const models = res.models ?? [];
         setVerified('ok');
+        if (models.length > 0) {
+          setReason(`${models.length} model${models.length === 1 ? '' : 's'} available — pick one on the next step.`);
+        }
+        // Drop a stale model selection if the provider doesn't actually
+        // expose it, so CoreParams shows a sensible default.
+        setData((d) => {
+          const bare = d.model.startsWith(`${d.provider}/`)
+            ? d.model.slice(d.provider.length + 1)
+            : d.model;
+          let nextModel = d.model;
+          if (models.length > 0 && !models.includes(bare)) {
+            nextModel = `${d.provider}/${models[0]}`;
+          }
+          return { ...d, availableModels: models, model: nextModel };
+        });
       } else if (res.reason === 'no-test-endpoint') {
         setVerified('skipped');
         setReason('Provider does not expose a list-models endpoint; key will be verified on first call.');
+        setData((d) => ({ ...d, availableModels: [] }));
       } else {
         setVerified('failed');
         setReason(res.error ?? `HTTP ${res.status}`);
+        setData((d) => ({ ...d, availableModels: [] }));
       }
     } catch (err) {
       setVerified('failed');
       setReason(err instanceof Error ? err.message : String(err));
+      setData((d) => ({ ...d, availableModels: [] }));
     } finally {
       setTesting(false);
     }

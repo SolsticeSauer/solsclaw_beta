@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"strings"
 
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer"
 	"github.com/SolsticeSauer/solsclaw_beta/internal/installer/steps"
@@ -59,6 +60,14 @@ type testKeyRequest struct {
 	APIKey   string               `json:"apiKey"`
 }
 
+// openaiModelsResponse mirrors the shape that every OpenAI-compatible
+// provider returns from /v1/models. We only need the IDs.
+type openaiModelsResponse struct {
+	Data []struct {
+		ID string `json:"id"`
+	} `json:"data"`
+}
+
 func handleTestKey(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
@@ -84,7 +93,9 @@ func handleTestKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	probeReq, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, provider.ModelsEndpoint, nil)
-	probeReq.Header.Set("Authorization", "Bearer "+req.APIKey)
+	if req.APIKey != "" {
+		probeReq.Header.Set("Authorization", "Bearer "+req.APIKey)
+	}
 
 	res, err := http.DefaultClient.Do(probeReq)
 	if err != nil {
@@ -92,12 +103,30 @@ func handleTestKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer res.Body.Close()
-	_, _ = io.Copy(io.Discard, res.Body)
+
+	verified := res.StatusCode >= 200 && res.StatusCode < 300
+	var models []string
+	if verified {
+		// Cap the read so a misbehaving provider can't exhaust memory.
+		const maxBytes = 2 << 20
+		body, _ := io.ReadAll(io.LimitReader(res.Body, maxBytes))
+		var parsed openaiModelsResponse
+		if jerr := json.Unmarshal(body, &parsed); jerr == nil {
+			for _, m := range parsed.Data {
+				if id := strings.TrimSpace(m.ID); id != "" {
+					models = append(models, id)
+				}
+			}
+		}
+	} else {
+		_, _ = io.Copy(io.Discard, res.Body)
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"ok":       res.StatusCode >= 200 && res.StatusCode < 300,
+		"ok":       verified,
 		"status":   res.StatusCode,
-		"verified": res.StatusCode >= 200 && res.StatusCode < 300,
+		"verified": verified,
+		"models":   models,
 	})
 }
 

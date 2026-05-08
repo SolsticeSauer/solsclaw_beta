@@ -40,10 +40,19 @@ export const Api = {
   state: () => api<InstallerState>('/api/state'),
   providers: () => api<{ providers: ProviderInfo[] }>('/api/providers'),
   testKey: (provider: string, apiKey: string) =>
-    api<{ ok: boolean; verified?: boolean; status?: number; error?: string; reason?: string }>(
-      '/api/providers/test-key',
-      { method: 'POST', body: JSON.stringify({ provider, apiKey }) },
-    ),
+    api<{
+      ok: boolean;
+      verified?: boolean;
+      status?: number;
+      error?: string;
+      reason?: string;
+      // Populated when the provider exposes a /v1/models endpoint and the
+      // probe came back 2xx. The IDs are bare (no provider prefix).
+      models?: string[];
+    }>('/api/providers/test-key', {
+      method: 'POST',
+      body: JSON.stringify({ provider, apiKey }),
+    }),
 };
 
 export interface PipelineEvent {
