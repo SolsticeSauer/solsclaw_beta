@@ -15,6 +15,7 @@ set -euo pipefail
 REPO="${OPENCLAW_INSTALLER_REPO:-SolsticeSauer/solsclaw_beta}"
 VERSION="${OPENCLAW_INSTALLER_VERSION:-latest}"
 INSTALL_HOME="${OPENCLAW_INSTALLER_HOME:-$HOME/.openclaw-installer}"
+NODE_LINE="${OPENCLAW_INSTALLER_NODE_LINE:-latest-v22.x}"
 MIN_NODE_MAJOR=20
 
 log()  { printf '\033[1;36m[openclaw]\033[0m %s\n' "$*"; }
@@ -39,15 +40,21 @@ detect_platform() {
 }
 
 ensure_tooling() {
-  for cmd in curl tar shasum; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      # macOS ships shasum; Linux usually has sha256sum instead
-      if [ "$cmd" = shasum ] && command -v sha256sum >/dev/null 2>&1; then
-        continue
-      fi
-      die "Required tool '$cmd' is missing. Please install it and retry."
-    fi
+  for cmd in curl tar awk; do
+    command -v "$cmd" >/dev/null 2>&1 || die "Required tool '$cmd' is missing. Please install it and retry."
   done
+  if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1; then
+    die "Neither shasum nor sha256sum found. Install coreutils."
+  fi
+  # Node tarballs for Linux are .tar.xz only; macOS also gets xz. xz-utils is
+  # default on most distros but missing on minimal containers.
+  if ! command -v xz >/dev/null 2>&1; then
+    if [ "$(uname -s)" = Linux ]; then
+      die "Required tool 'xz' is missing. Install with: sudo apt install xz-utils  (or: yum/dnf install xz)"
+    else
+      die "Required tool 'xz' is missing. Install xz and retry."
+    fi
+  fi
 }
 
 sha256_file() {
@@ -58,6 +65,9 @@ sha256_file() {
   fi
 }
 
+# Downloads an LTS Node distribution from nodejs.org and unpacks it under
+# $INSTALL_HOME/runtime/node. Avoids fnm/nvm to keep the dependency surface
+# minimal (no unzip, no shell-rc edits).
 ensure_node() {
   if command -v node >/dev/null 2>&1; then
     local current
@@ -66,18 +76,50 @@ ensure_node() {
       log "Found Node $(node -v)."
       return
     fi
-    warn "Node $(node -v) found but minimum is v${MIN_NODE_MAJOR}; installing fnm-managed Node."
+    warn "Node $(node -v) found but minimum is v${MIN_NODE_MAJOR}; installing portable Node alongside."
   else
-    log "Node.js not found; installing fnm to manage it locally."
+    log "Node.js not found; downloading portable Node ${NODE_LINE}."
   fi
 
-  if ! command -v fnm >/dev/null 2>&1; then
-    curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell --install-dir "$INSTALL_HOME/fnm"
-    export PATH="$INSTALL_HOME/fnm:$PATH"
-  fi
-  eval "$(fnm env --shell bash)"
-  fnm install --lts
-  fnm use --lts
+  local node_os node_arch
+  case "$(uname -s)" in
+    Darwin) node_os=darwin ;;
+    Linux)  node_os=linux ;;
+    *) die "Unsupported OS for Node bootstrap: $(uname -s)" ;;
+  esac
+  case "$(uname -m)" in
+    x86_64|amd64) node_arch=x64 ;;
+    arm64|aarch64) node_arch=arm64 ;;
+    *) die "Unsupported architecture for Node bootstrap: $(uname -m)" ;;
+  esac
+
+  local base="https://nodejs.org/dist/${NODE_LINE}"
+  local tmp
+  tmp="$(mktemp -d)"
+  trap "rm -rf '$tmp'" EXIT
+
+  log "Resolving Node release from $base..."
+  curl -fsSL "$base/SHASUMS256.txt" -o "$tmp/SHASUMS256.txt"
+
+  local pattern="${node_os}-${node_arch}.tar.xz"
+  local filename expected_sha
+  filename="$(awk -v p="$pattern" '$2 ~ p { print $2; exit }' "$tmp/SHASUMS256.txt")"
+  [ -n "$filename" ] || die "No Node tarball matching ${pattern} in ${NODE_LINE}."
+  expected_sha="$(awk -v f="$filename" '$2 == f { print $1 }' "$tmp/SHASUMS256.txt")"
+
+  log "Downloading $filename..."
+  curl -fsSL "$base/$filename" -o "$tmp/node.tar.xz"
+  local actual_sha
+  actual_sha="$(sha256_file "$tmp/node.tar.xz")"
+  [ "$actual_sha" = "$expected_sha" ] || die "Node checksum mismatch.\n  expected: $expected_sha\n  actual:   $actual_sha"
+
+  local node_root="$INSTALL_HOME/runtime/node"
+  rm -rf "$node_root"
+  mkdir -p "$node_root"
+  tar -xJf "$tmp/node.tar.xz" -C "$node_root" --strip-components=1
+
+  export PATH="$node_root/bin:$PATH"
+  log "Using portable Node $(node -v) at $node_root."
 }
 
 resolve_release_url() {

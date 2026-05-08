@@ -25,7 +25,7 @@ change settings — the wizard detects an existing config and switches into sett
 
 ## What the installer does
 
-1. Verifies Node.js ≥ 20 (installs via fnm/winget if missing).
+1. Verifies Node.js ≥ 20 (downloads a portable Node 22 LTS from nodejs.org if missing — no fnm/nvm required, just `curl`, `tar`, and `xz-utils` on Linux).
 2. Asks for the LLM provider, API key, default model, and workspace.
 3. Optionally toggles:
    - **OpenAI-compatible gateway** on port 18789 with a generated shared-secret token.
