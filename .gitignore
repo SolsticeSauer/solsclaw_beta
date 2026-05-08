@@ -7,5 +7,14 @@ build
 .env.local
 coverage
 .vite
-packages/installer-server/public
 *.tsbuildinfo
+
+# Go build outputs
+/solsclaw
+/solsclaw-*
+/dist-bin/
+
+# UI build output, embedded at go build time. Keep .gitkeep so the //go:embed
+# directive has a non-empty target on a fresh clone.
+/web/dist/*
+!/web/dist/.gitkeep

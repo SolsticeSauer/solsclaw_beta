@@ -1,14 +1,13 @@
 {
-  "name": "@tensorix/openclaw-installer-ui",
+  "name": "@solsticesauer/solsclaw-ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --outDir ../installer-server/public --emptyOutDir",
+    "build": "tsc -b && vite build --outDir ../../web/dist --emptyOutDir",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "lint": "eslint src --max-warnings=0"
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
     "react": "18.3.1",

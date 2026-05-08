@@ -8,24 +8,12 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux-x64
-          - os: ubuntu-24.04-arm
-            platform: linux-arm64
-          - os: macos-latest
-            platform: darwin-arm64
-          - os: macos-13
-            platform: darwin-x64
-          - os: windows-latest
-            platform: win-x64
-    runs-on: ${{ matrix.os }}
+  release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # UI build
       - uses: pnpm/action-setup@v4
         with:
           version: 11.0.8
@@ -33,47 +21,39 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - run: pnpm build:ui
 
-      - name: Stage release tarball
-        shell: bash
+      # Go build (cross-compiles for all targets from the same runner because
+      # the codebase is pure-Go: 99designs/keyring uses os/exec on macOS and
+      # godbus on Linux — no cgo, no platform-specific toolchains needed.)
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Build platform binaries
         run: |
-          STAGE=dist/stage
-          mkdir -p "$STAGE"
-          # Build artifacts (compiled JS + UI assets + package.json so node can resolve deps).
-          cp -R packages/installer-server/dist/. "$STAGE/"
-          cp -R packages/installer-server/public "$STAGE/public"
-          cp packages/installer-server/package.json "$STAGE/package.json"
-          # Vendor production deps so the runtime tree is self-contained.
-          (cd "$STAGE" && npm install --omit=dev --no-audit --no-fund)
-          # Tar contents (no wrapping directory) so the bootstrap script's
-          # extraction yields $INSTALL_HOME/bin/installer.js as expected.
-          tar -czf "installer-${{ matrix.platform }}.tar.gz" -C "$STAGE" .
-          # Portable SHA-256: macOS has shasum, Linux + Git-Bash on Windows have sha256sum.
-          if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
-          else
-            shasum -a 256 "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
-          fi
+          set -euo pipefail
+          mkdir -p dist
+          VERSION="${GITHUB_REF_NAME}"
+          LDFLAGS="-s -w -X main.version=${VERSION}"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.platform }}
-          path: |
-            installer-${{ matrix.platform }}.tar.gz
-            installer-${{ matrix.platform }}.sha256
+          for target in darwin-arm64 darwin-amd64 linux-amd64 linux-arm64 windows-amd64; do
+            os="${target%-*}"
+            arch="${target#*-}"
+            ext=""
+            [ "$os" = "windows" ] && ext=".exe"
+            out="dist/solsclaw-${target}${ext}"
+            echo "→ $out"
+            GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 \
+              go build -trimpath -ldflags="$LDFLAGS" -o "$out" ./cmd/solsclaw
+            sha256sum "$out" | awk '{print $1}' > "$out.sha256"
+          done
 
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
+          ls -lh dist
+
+      - uses: softprops/action-gh-release@v2
         with:
-          path: artifacts
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*
+          files: dist/*
           generate_release_notes: true
