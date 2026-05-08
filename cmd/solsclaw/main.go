@@ -38,9 +38,14 @@ func main() {
 	}
 
 	fmt.Printf("\n  Solsclaw Installer ready at:\n    %s\n\n", started.URL)
-	fmt.Printf("  (Press Ctrl+C to exit. The token is single-session and is regenerated next start.)\n\n")
+	fmt.Printf("  (Press Ctrl+C to exit. The token is single-session and is regenerated next start.)\n")
 
-	if !*noOpen {
+	printRemoteAccessHint(os.Stdout, started.Port)
+	fmt.Println()
+
+	if !*noOpen && !looksRemote() {
+		// Skip the browser launch on remote/headless boxes — xdg-open on a
+		// server with no display just prints an unhelpful error.
 		if err := openBrowser(started.URL); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not open browser automatically: %v\n", err)
 		}
