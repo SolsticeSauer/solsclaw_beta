@@ -113,13 +113,18 @@ export default function Home({ state, data, onConfigure, onReinstall }: Props): 
       </div>
 
       <h3 style={{ marginTop: 32 }}>Quickstart</h3>
+      <p style={{ marginTop: 0, fontSize: 13 }}>
+        If <code>openclaw: command not found</code>, activate the PATH for your
+        current shell — new terminals are wired up automatically:
+      </p>
+      <pre className="log-stream">{`source ~/.solsclaw/env.sh`}</pre>
       <pre className="log-stream">
         {isDocker
-          ? `cd ~/.solsclaw/docker
-docker compose logs -f openclaw                       # tail logs
-docker compose exec openclaw openclaw chat "hi"        # talk to your agent
-docker compose down                                    # stop
-docker compose up -d --build                           # rebuild + start`
+          ? `openclaw chat "hi"                # routes to the container
+cd ~/.solsclaw/docker
+docker compose logs -f openclaw    # tail logs
+docker compose down                 # stop
+docker compose up -d --build        # rebuild + start`
           : `openclaw chat "hi"
 openclaw doctor
 openclaw gateway status`}

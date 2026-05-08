@@ -28,5 +28,10 @@ func Default() []installer.Step {
 		DockerCheck{},
 		DockerComposeUp{},
 		DockerVerify{},
+		// Shared tail: wire up the user's shell so `openclaw` works in
+		// new terminals. Runs last because it depends on either the
+		// portable-node bin (native) or the docker-compose file (docker)
+		// existing on disk.
+		SetupShellPath{},
 	}
 }

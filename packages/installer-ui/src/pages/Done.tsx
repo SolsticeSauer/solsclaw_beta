@@ -20,11 +20,19 @@ export default function Done({ data, state }: Props): JSX.Element {
       </p>
 
       <h3>Quickstart</h3>
+      <p style={{ marginTop: 0 }}>
+        For your <strong>current</strong> shell, activate the new PATH first:
+      </p>
+      <pre className="log-stream">{`source ~/.solsclaw/env.sh`}</pre>
+      <p style={{ marginTop: 8 }}>
+        New terminals pick this up automatically — solsclaw added a guarded
+        block to your <code>~/.bashrc</code> / <code>~/.zshrc</code>.
+      </p>
       <pre className="log-stream">
         {isDocker
-          ? `cd ~/.solsclaw/docker
+          ? `openclaw chat "Hello, who are you?"   # routes to the container
+cd ~/.solsclaw/docker
 docker compose logs -f openclaw
-docker compose exec openclaw openclaw chat "Hello, who are you?"
 docker compose down              # stop
 docker compose up -d --build     # rebuild after editing the Dockerfile`
           : `openclaw doctor
