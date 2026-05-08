@@ -27,8 +27,8 @@ test: ## go test ./...
 	go test ./...
 
 clean: ## Remove build outputs
-	rm -rf web/dist/* solsclaw solsclaw-* dist-bin
-	touch web/dist/.gitkeep
+	find web/dist -mindepth 1 ! -name '.gitkeep' -delete
+	rm -rf solsclaw solsclaw-* dist-bin
 
 # Build all release artifacts locally (mirrors what goreleaser does in CI).
 # Useful for verifying the cross-compile story before pushing a tag.
