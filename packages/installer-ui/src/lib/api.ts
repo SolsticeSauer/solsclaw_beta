@@ -11,8 +11,8 @@ export interface ProviderInfo {
 }
 
 export interface InstallerState {
-  platform: 'darwin' | 'linux' | 'win32';
-  nodeVersion: string;
+  platform: 'darwin' | 'linux' | 'windows';
+  goVersion: string;
   configPath: string;
   mode: 'install' | 'settings';
   existingConfig: unknown;

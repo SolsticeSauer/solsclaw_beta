@@ -118,6 +118,6 @@ export default function App(): JSX.Element {
 }
 
 function defaultWorkspace(platform: string): string {
-  if (platform === 'win32') return '%USERPROFILE%\\OpenClaw';
+  if (platform === 'windows' || platform === 'win32') return '%USERPROFILE%\\OpenClaw';
   return '~/OpenClaw';
 }
