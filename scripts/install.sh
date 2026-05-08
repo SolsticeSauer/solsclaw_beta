@@ -96,7 +96,7 @@ ensure_node() {
   local base="https://nodejs.org/dist/${NODE_LINE}"
   local tmp
   tmp="$(mktemp -d)"
-  trap "rm -rf '$tmp'" EXIT
+  trap 'rm -rf "$tmp"' EXIT
 
   log "Resolving Node release from $base..."
   curl -fsSL "$base/SHASUMS256.txt" -o "$tmp/SHASUMS256.txt"
@@ -137,7 +137,7 @@ download_and_verify() {
   local checksum_url="${tarball_url%.tar.gz}.sha256"
   local tmp
   tmp="$(mktemp -d)"
-  trap "rm -rf '$tmp'" EXIT
+  trap 'rm -rf "$tmp"' EXIT
 
   log "Downloading installer (${platform})..."
   curl -fsSL "$tarball_url" -o "$tmp/installer.tar.gz"

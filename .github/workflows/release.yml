@@ -10,6 +10,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -50,7 +51,12 @@ jobs:
           # Tar contents (no wrapping directory) so the bootstrap script's
           # extraction yields $INSTALL_HOME/bin/installer.js as expected.
           tar -czf "installer-${{ matrix.platform }}.tar.gz" -C "$STAGE" .
-          shasum -a 256 "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
+          # Portable SHA-256: macOS has shasum, Linux + Git-Bash on Windows have sha256sum.
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
+          else
+            shasum -a 256 "installer-${{ matrix.platform }}.tar.gz" | awk '{print $1}' > "installer-${{ matrix.platform }}.sha256"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
