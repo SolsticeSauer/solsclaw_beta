@@ -10,13 +10,17 @@ import OptionalFeatures from './pages/OptionalFeatures';
 import Review from './pages/Review';
 import InstallProgress from './pages/InstallProgress';
 import Done from './pages/Done';
+import Home from './pages/Home';
 import Settings, { configToWizard } from './pages/Settings';
+
+type SettingsView = 'home' | 'settings' | 'wizard';
 
 export default function App(): JSX.Element {
   const [state, setState] = useState<InstallerState | null>(null);
   const [step, setStep] = useState<StepId>('welcome');
   const [data, setData] = useState<WizardData>(DEFAULT_WIZARD);
   const [error, setError] = useState<string | null>(null);
+  const [settingsView, setSettingsView] = useState<SettingsView>('home');
 
   useEffect(() => {
     Api.state()
@@ -72,8 +76,18 @@ export default function App(): JSX.Element {
           : 'Existing config detected — adjust settings or reinstall.'}
       </p>
 
-      {state.mode === 'settings' ? (
-        <Settings initial={data} />
+      {state.mode === 'settings' && settingsView === 'home' ? (
+        <Home
+          state={state}
+          data={data}
+          onConfigure={() => setSettingsView('settings')}
+          onReinstall={() => {
+            setStep('welcome');
+            setSettingsView('wizard');
+          }}
+        />
+      ) : state.mode === 'settings' && settingsView === 'settings' ? (
+        <Settings initial={data} onBack={() => setSettingsView('home')} />
       ) : (
         <>
           <div className="stepper">

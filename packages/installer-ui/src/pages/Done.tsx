@@ -53,6 +53,10 @@ OpenClaw state:        ~/.solsclaw/docker/openclaw-data/
         Mode: <strong>{data.installMode}</strong> · Provider: <strong>{data.provider}</strong> ·
         Model: <strong>{data.model}</strong>
       </p>
+
+      <div className="actions">
+        <button onClick={() => window.location.reload()}>Open home</button>
+      </div>
     </div>
   );
 }

@@ -4,11 +4,12 @@ import { DEFAULT_WIZARD, type WizardData } from '../lib/wizardState';
 
 interface Props {
   initial: WizardData;
+  onBack?: () => void;
 }
 
 type Tab = 'config' | 'addons' | 'danger';
 
-export default function Settings({ initial }: Props): JSX.Element {
+export default function Settings({ initial, onBack }: Props): JSX.Element {
   const [tab, setTab] = useState<Tab>('config');
   const [data, setData] = useState<WizardData>(initial);
   const [busy, setBusy] = useState(false);
@@ -37,7 +38,17 @@ export default function Settings({ initial }: Props): JSX.Element {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
+        {onBack && (
+          <button
+            className="secondary"
+            onClick={onBack}
+            style={{ borderRadius: 6 }}
+            title="Back to home"
+          >
+            ← Home
+          </button>
+        )}
         {(['config', 'addons', 'danger'] as const).map((t) => (
           <button
             key={t}
@@ -202,34 +213,35 @@ rm -rf ~/.openclaw`}</pre>
   );
 }
 
+// configToWizard rebuilds the wizard's in-memory state from a previously
+// written openclaw.json. Field paths follow OpenClaw's real schema —
+// agents.defaults.model and models.providers.X.apiKey, NOT the early
+// TS-era guesses.
 export function configToWizard(cfg: unknown, fallback: WizardData = DEFAULT_WIZARD): WizardData {
   if (!cfg || typeof cfg !== 'object') return fallback;
   const c = cfg as {
-    agent?: { model?: string; workspace?: string };
-    providers?: Record<string, unknown>;
-    gateway?: { openaiCompat?: { enabled?: boolean }; tailscale?: { enabled?: boolean; hostname?: string } };
-    telemetry?: { enabled?: boolean };
-    installer?: { addons?: { cli?: boolean; x402Skill?: boolean; usxSkill?: boolean } };
+    models?: {
+      providers?: Record<string, { baseUrl?: string; apiKey?: string }>;
+    };
+    agents?: { defaults?: { model?: string; workspace?: string } };
+    gateway?: { http?: { endpoints?: { chatCompletions?: { enabled?: boolean } } } };
   };
-  const provider = Object.keys(c.providers ?? {})[0] ?? fallback.provider;
+
+  const providerKey = Object.keys(c.models?.providers ?? {})[0] ?? fallback.provider;
+
   return {
     installMode: fallback.installMode,
-    provider,
+    provider: providerKey,
+    // Never echo the existing key back to the form — saving without
+    // touching it should leave the keychain entry alone.
     apiKey: '',
-    model: c.agent?.model ?? fallback.model,
-    workspace: c.agent?.workspace ?? fallback.workspace,
-    telemetry: c.telemetry?.enabled ?? false,
+    model: c.agents?.defaults?.model ?? fallback.model,
+    workspace: c.agents?.defaults?.workspace ?? fallback.workspace,
+    telemetry: false,
     optionalFeatures: {
-      openaiGateway: c.gateway?.openaiCompat?.enabled ?? false,
-      tailscale: {
-        enabled: c.gateway?.tailscale?.enabled ?? false,
-        hostname: c.gateway?.tailscale?.hostname,
-      },
-      solana: {
-        cli: c.installer?.addons?.cli ?? false,
-        x402Skill: c.installer?.addons?.x402Skill ?? false,
-        usxSkill: c.installer?.addons?.usxSkill ?? false,
-      },
+      openaiGateway: c.gateway?.http?.endpoints?.chatCompletions?.enabled ?? false,
+      tailscale: { enabled: false },
+      solana: { cli: false, x402Skill: false, usxSkill: false },
     },
   };
 }
